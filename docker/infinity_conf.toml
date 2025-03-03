@@ -1,0 +1,22 @@
+[general]
+version                  = "0.6.0"
+time_zone                = "utc-8"
+
+[network]
+server_address           = "0.0.0.0"
+http_port                = 23820
+client_port              = 23817
+connection_pool_size     = 128
+
+# trace/debug/info/warning/error/critical 6 log levels, default: info
+log_level               = "info"
+
+optimize_interval        = "10s"
+cleanup_interval         = "60s"
+compact_interval         = "120s"
+storage_type             = "local"
+
+# dump memory index entry when it reachs the capacity
+mem_index_capacity       = 65536
+
+

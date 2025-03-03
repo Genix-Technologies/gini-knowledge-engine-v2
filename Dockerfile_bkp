@@ -1,0 +1,73 @@
+# base stage
+FROM ubuntu:22.04 AS base
+USER root
+SHELL ["/bin/bash", "-c"]
+
+ARG NEED_MIRROR=0
+ARG LIGHTEN=0
+ENV LIGHTEN=${LIGHTEN}
+
+WORKDIR /ragflow
+# Copy models downloaded via download_deps.py
+RUN mkdir -p /ragflow/rag/res/deepdoc /root/.ragflow
+
+RUN --mount=type=bind,from=infiniflow/ragflow_deps:latest,source=/,target=/deps \
+    cp -r /deps/nltk_data /root/ && \
+    cp /deps/tika-server-standard-3.0.0.jar /deps/tika-server-standard-3.0.0.jar.md5 /ragflow/ && \
+    cp /deps/cl100k_base.tiktoken /ragflow/9b5ad71b2ce5302211f9c61530b329a4922fc6a4
+
+ENV TIKA_SERVER_JAR="file:///ragflow/tika-server-standard-3.0.0.jar"
+ENV DEBIAN_FRONTEND=noninteractive
+
+ENV PYTHONDONTWRITEBYTECODE=1 DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
+ENV PATH=/root/.local/bin:$PATH
+
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+RUN cargo --version && rustc --version
+
+# builder stage
+FROM base AS builder
+USER root
+
+WORKDIR /ragflow
+
+# install dependencies from uv.lock file
+COPY pyproject.toml uv.lock ./
+
+COPY web web
+COPY docs docs
+RUN --mount=type=cache,id=ragflow_npm,target=/root/.npm,sharing=locked \
+    cd web && npm install && npm run build
+
+# production stage
+FROM base AS production
+USER root
+
+WORKDIR /ragflow
+
+# Copy Python environment and packages
+ENV VIRTUAL_ENV=/ragflow/.venv
+COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
+ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
+
+ENV PYTHONPATH=/ragflow/
+
+COPY web web
+COPY api api
+COPY conf conf
+COPY deepdoc deepdoc
+COPY rag rag
+COPY agent agent
+COPY graphrag graphrag
+COPY pyproject.toml uv.lock ./
+
+COPY docker/service_conf.yaml.template ./conf/service_conf.yaml.template
+COPY docker/entrypoint.sh docker/entrypoint-parser.sh ./
+RUN chmod +x ./entrypoint*.sh
+
+# Copy compiled web pages
+COPY --from=builder /ragflow/web/dist /ragflow/web/dist
+
+COPY --from=builder /ragflow/VERSION /ragflow/VERSION
+ENTRYPOINT ["./entrypoint.sh"]
