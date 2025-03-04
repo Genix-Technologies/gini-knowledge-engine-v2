@@ -33,11 +33,11 @@ class ExeSQLParam(GenerateParam):
     def __init__(self):
         super().__init__()
         self.db_type = "mysql"
-        self.database = "rag_flow"
-        self.username = "root"
-        self.host = "44.212.5.246"
-        self.port = 5455
-        self.password = "infini_rag_flow"
+        self.database = ""
+        self.username = ""
+        self.host = ""
+        self.port = 3306
+        self.password = ""
         self.loop = 3
         self.top_n = 30
 

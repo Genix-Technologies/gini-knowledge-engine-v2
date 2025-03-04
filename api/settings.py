@@ -75,7 +75,7 @@ def init_settings():
     global LLM, LLM_FACTORY, LLM_BASE_URL, LIGHTEN, DATABASE_TYPE, DATABASE
     LIGHTEN = 0 #int(os.environ.get('LIGHTEN', "0"))
     DATABASE_TYPE = 'mysql' #os.getenv("DB_TYPE", 'mysql')
-    DATABASE = decrypt_database_config(name=DATABASE_TYPE)
+    #DATABASE = decrypt_database_config(name=DATABASE_TYPE)
     LLM = {} #get_base_config("user_default_llm", {})
     LLM_FACTORY = "OpenAI" #LLM.get("factory", "Tongyi-Qianwen")
     LLM_BASE_URL = "" #LLM.get("base_url")
