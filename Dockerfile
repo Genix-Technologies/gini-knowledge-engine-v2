@@ -13,7 +13,7 @@ WORKDIR /ragflow
 RUN mkdir -p /ragflow/rag/res/deepdoc /root/.ragflow
 
 # Set environment variables
-ENV DEBIAN_FRONTEND=noninteractive
+ENV DEBIAN_FRONTEND=noninteractive 
 
 # Install system dependencies
 RUN --mount=type=cache,id=ragflow_apt,target=/var/cache/apt,sharing=locked \
