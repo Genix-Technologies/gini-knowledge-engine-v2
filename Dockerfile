@@ -1,11 +1,11 @@
-# base stage
+# Base stage
 FROM ubuntu:22.04 AS base
 USER root
 SHELL ["/bin/bash", "-c"]
 
+# Set constants
 ENV LIGHTEN=1
-ENV NEED_MIRROR=0
-
+ENV NEED_MIRROR=false
 WORKDIR /ragflow
 
 # Copy models downloaded via download_deps.py
@@ -16,16 +16,8 @@ RUN --mount=type=bind,from=infiniflow/ragflow_deps:latest,source=/huggingface.co
         /huggingface.co/InfiniFlow/text_concat_xgb_v1.0 \
         /huggingface.co/InfiniFlow/deepdoc \
         | tar -xf - --strip-components=3 -C /ragflow/rag/res/deepdoc 
-RUN --mount=type=bind,from=infiniflow/ragflow_deps:latest,source=/huggingface.co,target=/huggingface.co \
-    tar -cf - \
-        /huggingface.co/BAAI/bge-large-zh-v1.5 \
-        /huggingface.co/BAAI/bge-reranker-v2-m3 \
-        /huggingface.co/maidalun1020/bce-embedding-base_v1 \
-        /huggingface.co/maidalun1020/bce-reranker-base_v1 \
-        | tar -xf - --strip-components=2 -C /root/.ragflow
 
-# https://github.com/chrismattmann/tika-python
-# This is the only way to run python-tika without internet access. Without this set, the default is to check the tika version and pull latest every time from Apache.
+# Python-tika dependency setup
 RUN --mount=type=bind,from=infiniflow/ragflow_deps:latest,source=/,target=/deps \
     cp -r /deps/nltk_data /root/ && \
     cp /deps/tika-server-standard-3.0.0.jar /deps/tika-server-standard-3.0.0.jar.md5 /ragflow/ && \
@@ -34,29 +26,23 @@ RUN --mount=type=bind,from=infiniflow/ragflow_deps:latest,source=/,target=/deps 
 ENV TIKA_SERVER_JAR="file:///ragflow/tika-server-standard-3.0.0.jar"
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Setup apt
-# Python package and implicit dependencies:
+# Install system dependencies
 RUN --mount=type=cache,id=ragflow_apt,target=/var/cache/apt,sharing=locked \
     rm -f /etc/apt/apt.conf.d/docker-clean && \
     echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
     chmod 1777 /tmp && \
     apt update && \
     apt --no-install-recommends install -y ca-certificates && \
-    apt update && \
-    apt install -y libglib2.0-0 libglx-mesa0 libgl1 && \
-    apt install -y pkg-config libicu-dev libgdiplus && \
-    apt install -y default-jdk && \
-    apt install -y libatk-bridge2.0-0 && \
-    apt install -y libpython3-dev libgtk-4-1 libnss3 xdg-utils libgbm-dev && \
-    apt install -y libjemalloc-dev && \
-    apt install -y python3-pip pipx nginx unzip curl wget git vim less
+    apt install -y libglib2.0-0 libglx-mesa0 libgl1 pkg-config libicu-dev libgdiplus \
+                   default-jdk libatk-bridge2.0-0 libpython3-dev libgtk-4-1 libnss3 xdg-utils \
+                   libgbm-dev libjemalloc-dev python3-pip pipx nginx unzip curl wget git vim less
 
 RUN pipx install uv
 
 ENV PYTHONDONTWRITEBYTECODE=1 DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
 ENV PATH=/root/.local/bin:$PATH
 
-# nodejs 12.22 on Ubuntu 22.04 is too old
+# Install Node.js 20
 RUN --mount=type=cache,id=ragflow_apt,target=/var/cache/apt,sharing=locked \
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt purge -y nodejs npm cargo && \
@@ -64,16 +50,17 @@ RUN --mount=type=cache,id=ragflow_apt,target=/var/cache/apt,sharing=locked \
     apt update && \
     apt install -y nodejs
 
-# A modern version of cargo is needed for the latest version of the Rust compiler.
-RUN apt update && apt install -y curl build-essential \
-    && curl --proto '=https' --tlsv1.2 --http1.1 -sSf https://sh.rustup.rs | bash -s -- -y --profile minimal \
-    && echo 'export PATH="/root/.cargo/bin:${PATH}"' >> /root/.bashrc
+# Install Rust
+RUN apt update && apt install -y curl build-essential && \
+    curl --proto '=https' --tlsv1.2 --http1.1 -sSf https://sh.rustup.rs | bash -s -- -y --profile minimal && \
+    echo 'export PATH="/root/.cargo/bin:${PATH}"' >> /root/.bashrc
 
 ENV PATH="/root/.cargo/bin:${PATH}"
 
+# Verify installations
 RUN cargo --version && rustc --version
 
-# Add msssql ODBC driver
+# Add Microsoft SQL Server ODBC driver
 RUN --mount=type=cache,id=ragflow_apt,target=/var/cache/apt,sharing=locked \
     curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && \
     curl https://packages.microsoft.com/config/ubuntu/22.04/prod.list > /etc/apt/sources.list.d/mssql-release.list && \
@@ -86,7 +73,7 @@ RUN --mount=type=cache,id=ragflow_apt,target=/var/cache/apt,sharing=locked \
     fi || \
     { echo "Failed to install ODBC driver"; exit 1; }
 
-# Add dependencies of selenium
+# Install Chrome and Chromedriver for Selenium
 RUN --mount=type=bind,from=infiniflow/ragflow_deps:latest,source=/chrome-linux64-121-0-6167-85,target=/chrome-linux64.zip \
     unzip /chrome-linux64.zip && \
     mv chrome-linux64 /opt/chrome && \
@@ -96,7 +83,7 @@ RUN --mount=type=bind,from=infiniflow/ragflow_deps:latest,source=/chromedriver-l
     mv chromedriver /usr/local/bin/ && \
     rm -f /usr/bin/google-chrome
 
-# https://forum.aspose.com/t/aspose-slides-for-net-no-usable-version-of-libssl-found-with-linux-server/271344/13
+# Install SSL libraries
 RUN --mount=type=bind,from=infiniflow/ragflow_deps:latest,source=/,target=/deps \
     if [ "$(uname -m)" = "x86_64" ]; then \
         dpkg -i /deps/libssl1.1_1.1.1f-1ubuntu2_amd64.deb; \
@@ -104,7 +91,23 @@ RUN --mount=type=bind,from=infiniflow/ragflow_deps:latest,source=/,target=/deps 
         dpkg -i /deps/libssl1.1_1.1.1f-1ubuntu2_arm64.deb; \
     fi
 
-# production stage
+# Builder stage
+FROM base AS builder
+USER root
+
+WORKDIR /ragflow
+
+# Install dependencies from uv.lock file
+COPY pyproject.toml uv.lock ./
+RUN --mount=type=cache,id=ragflow_uv,target=/root/.cache/uv,sharing=locked \
+    uv sync --python 3.10 --frozen
+
+COPY .git /ragflow/.git
+RUN version_info=$(git describe --tags --match=v* --first-parent --always); \
+    echo "RAGFlow version: $version_info"; \
+    echo $version_info > /ragflow/VERSION
+
+# Production stage
 FROM base AS production
 USER root
 
@@ -130,4 +133,5 @@ COPY docker/entrypoint.sh docker/entrypoint-parser.sh ./
 RUN chmod +x ./entrypoint*.sh
 
 COPY --from=builder /ragflow/VERSION /ragflow/VERSION
+
 ENTRYPOINT ["./entrypoint.sh"]
