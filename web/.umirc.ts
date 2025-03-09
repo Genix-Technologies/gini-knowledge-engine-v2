@@ -37,7 +37,8 @@ export default defineConfig({
   proxy: [
     {
       context: ['/api', '/v1'],
-      target: 'http://127.0.0.1:9380/',
+      target: 'http://ec2-44-212-5-246.compute-1.amazonaws.com/',
+      // target: 'http://127.0.0.1:9380/',
       changeOrigin: true,
       ws: true,
       logger: console,

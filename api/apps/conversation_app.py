@@ -80,17 +80,17 @@ def get():
         e, conv = ConversationService.get_by_id(conv_id)
         if not e:
             return get_data_error_result(message="Conversation not found!")
-        tenants = UserTenantService.query(user_id=current_user.id)
-        avatar =None
-        for tenant in tenants:
-            dialog = DialogService.query(tenant_id=tenant.tenant_id, id=conv.dialog_id)
-            if dialog and len(dialog)>0:
-                avatar = dialog[0].icon
-                break
-        else:
-            return get_json_result(
-                data=False, message='Only owner of conversation authorized for this operation.',
-                code=settings.RetCode.OPERATING_ERROR)
+        #tenants = UserTenantService.query(user_id=current_user.id)
+        #avatar =None
+        #for tenant in tenants:
+        #    dialog = DialogService.query(tenant_id=tenant.tenant_id, id=conv.dialog_id)
+        #    if dialog and len(dialog)>0:
+        #        avatar = dialog[0].icon
+        #        break
+        #else:
+        #    return get_json_result(
+         #       data=False, message='Only owner of conversation authorized for this operation.',
+         #       code=settings.RetCode.OPERATING_ERROR)
 
         def get_value(d, k1, k2):
             return d.get(k1, d.get(k2))
@@ -109,7 +109,9 @@ def get():
             } for ck in ref.get("chunks", [])]
 
         conv = conv.to_dict()
-        conv["avatar"]=avatar
+        #conv["avatar"]=avatar
+        conv["avatar"]=None
+
         return get_json_result(data=conv)
     except Exception as e:
         return server_error_response(e)
@@ -144,14 +146,14 @@ def rm():
             exist, conv = ConversationService.get_by_id(cid)
             if not exist:
                 return get_data_error_result(message="Conversation not found!")
-            tenants = UserTenantService.query(user_id=current_user.id)
-            for tenant in tenants:
-                if DialogService.query(tenant_id=tenant.tenant_id, id=conv.dialog_id):
-                    break
-            else:
-                return get_json_result(
-                    data=False, message='Only owner of conversation authorized for this operation.',
-                    code=settings.RetCode.OPERATING_ERROR)
+            #tenants = UserTenantService.query(user_id=current_user.id)
+            #for tenant in tenants:
+            #    if DialogService.query(tenant_id=tenant.tenant_id, id=conv.dialog_id):
+            #        break
+            #else:
+            #    return get_json_result(
+            #        data=False, message='Only owner of conversation authorized for this operation.',
+            #        code=settings.RetCode.OPERATING_ERROR)
             ConversationService.delete_by_id(cid)
         return get_json_result(data=True)
     except Exception as e:
@@ -201,7 +203,8 @@ def completion():
             return get_data_error_result(message="Dialog not found!")
         del req["conversation_id"]
         del req["messages"]
-
+        print("\n \n \n \n \n \n In line 206 : ", conv,"\n \n \n \n \n ")
+       
         if not conv.reference:
             conv.reference = []
         else:

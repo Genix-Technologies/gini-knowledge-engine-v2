@@ -44,15 +44,13 @@ def set_dialog():
     vector_similarity_weight = req.get("vector_similarity_weight", 0.3)
     llm_setting = req.get("llm_setting", {})
     default_prompt = {
-        "system": """你是一个智能助手，请总结知识库的内容来回答问题，请列举知识库中的数据详细回答。当所有知识库内容都与问题无关时，你的回答必须包括“知识库中未找到您要的答案！”这句话。回答需要考虑聊天历史。
-以下是知识库：
-{knowledge}
-以上是知识库。""",
-        "prologue": "您好，我是您的助手小樱，长得可爱又善良，can I help you?",
+        "system": """Summarize the user query based in the given data sets ：
+{knowledge}""",
+        "prologue": "How can I help you?",
         "parameters": [
             {"key": "knowledge", "optional": False}
         ],
-        "empty_response": "Sorry! 知识库中未找到相关内容！"
+        "empty_response": "Sorry! The response not found"
     }
     prompt_config = req.get("prompt_config", default_prompt)
 
@@ -72,15 +70,22 @@ def set_dialog():
                 message="Parameter '{}' is not used".format(p["key"]))
 
     try:
-        e, tenant = TenantService.get_by_id(current_user.id)
-        if not e:
-            return get_data_error_result(message="Tenant not found!")
+        #e, tenant = TenantService.get_by_id(current_user.id)
+        #print("\n \n \n \n \n Tenants", tenant, "\n \n \n \n \n")
+        #if not e:
+        #    return get_data_error_result(message="Tenant not found!")
         kbs = KnowledgebaseService.get_by_ids(req.get("kb_ids"))
         embd_count = len(set([kb.embd_id for kb in kbs]))
-        if embd_count != 1:
-            return get_data_error_result(message=f'Datasets use different embedding models: {[kb.embd_id for kb in kbs]}"')
 
-        llm_id = req.get("llm_id", tenant.llm_id)
+        if embd_count <= 0:
+            return get_data_error_result(message=f' No KBs selected "') #embedding models: {[kb.embd_id for kb in kbs]}
+
+        llm_id = req.get("llm_id", None)
+        #return get_data_error_result(message=f'LLM model not found - {llm_id}')
+        if llm_id is None:
+            return get_data_error_result(message=f'LLM model not found')
+        
+        #return get_data_error_result(message=f'LLM fff {llm_id}')
         if not dialog_id:
             if not req.get("kb_ids"):
                 return get_data_error_result(
@@ -177,13 +182,13 @@ def rm():
     tenants = UserTenantService.query(user_id=current_user.id)
     try:
         for id in req["dialog_ids"]:
-            for tenant in tenants:
-                if DialogService.query(tenant_id=tenant.tenant_id, id=id):
-                    break
-            else:
-                return get_json_result(
-                    data=False, message='Only owner of dialog authorized for this operation.',
-                    code=settings.RetCode.OPERATING_ERROR)
+            #for tenant in tenants:
+            #    if DialogService.query(tenant_id=tenant.tenant_id, id=id):
+            #        break
+            #else:
+           #     return get_json_result(
+            #        data=False, message='Only owner of dialog authorized for this operation.',
+            #        code=settings.RetCode.OPERATING_ERROR)
             dialog_list.append({"id": id,"status":StatusEnum.INVALID.value})
         DialogService.update_many_by_id(dialog_list)
         return get_json_result(data=True)

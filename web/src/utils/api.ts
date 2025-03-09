@@ -1,4 +1,5 @@
-let api_host = "http://localhost:9380/v1"; //`http://ec2-54-174-67-117.compute-1.amazonaws.com/v1`;
+//let api_host = "http://localhost:9380/v1"; //`http://ec2-54-174-67-117.compute-1.amazonaws.com/v1`;
+let api_host = "http://ec2-54-174-67-117.compute-1.amazonaws.com/v1"; //`http://ec2-54-174-67-117.compute-1.amazonaws.com/v1`;
 
 export { api_host }; 
 

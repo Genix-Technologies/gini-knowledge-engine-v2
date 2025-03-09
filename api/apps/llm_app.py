@@ -313,7 +313,7 @@ def delete_factory():
 def my_llms():
     try:
         res = {}
-        TenantLLMService.get_application_llms(current_user.id)
+        #TenantLLMService.get_application_llms(current_user.id)
         for o in TenantLLMService.get_my_llms(current_user.id):
             if o["llm_factory"] not in res:
                 res[o["llm_factory"]] = {
@@ -329,7 +329,40 @@ def my_llms():
     except Exception as e:
         return server_error_response(e)
 
+@manager.route('/configured_llms', methods=['GET'])  # noqa: F821
+@login_required
+def configured_llms():
+    try:
+        llm_names = ["Gemini", "OpenAI", "Ollama", "Azure-OpenAI"]
+        
+        # Initialize the result dictionary with empty/default values
+        res = {
+            name: {
+                "tags": "",
+                "api_key": "",
+                "api_base": "",
+                "llm": []
+            } 
+            for name in llm_names
+        }
 
+        # Fetch configured LLMs and populate real data if available
+        for o in TenantLLMService.get_configured_llms():
+            res[o["llm_factory"]]["tags"] = o.get("tags", "")
+            res[o["llm_factory"]]["api_key"] = "Avaialble" if o.get("api_key", "") else None 
+            res[o["llm_factory"]]["api_base"] = o.get("api_base", "")
+
+            res[o["llm_factory"]]["llm"].append({
+                "type": o.get("model_type", ""),
+                "name": o.get("llm_name", ""),
+                "used_token": o.get("used_tokens", 0)
+            })
+
+        return get_json_result(data=res)
+    except Exception as e:
+        return server_error_response(e)
+
+    
 @manager.route('/list', methods=['GET'])  # noqa: F821
 @login_required
 def list_app():

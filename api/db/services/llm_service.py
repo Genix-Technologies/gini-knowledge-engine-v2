@@ -58,13 +58,54 @@ class TenantLLMService(CommonService):
             LLMFactories.tags,
             cls.model.model_type,
             cls.model.llm_name,
-            cls.model.used_tokens
+            cls.model.used_tokens,
+            cls.model.api_key,
+            cls.model.api_base
         ]
+      
         objs = cls.model.select(*fields).join(LLMFactories, on=(cls.model.llm_factory == LLMFactories.name)).where(
             cls.model.tenant_id == tenant_id, ~cls.model.api_key.is_null()).dicts()
-        TenantLLMService.query()
+        #TenantLLMService.query()
+        
+        llm_names = ["Gemini","OpenAI","Ollama","Azure-OpenAI"]
+        #cls.query( llm_factory=llm_names)
+        llm_keys = (
+            cls.model
+            .select(*fields)
+            .join(LLMFactories, on=(cls.model.llm_factory == LLMFactories.name))
+            .where(cls.model.llm_factory.in_(llm_names), cls.model.api_key.is_null(False))
+            .group_by(cls.model.llm_factory)
+            .dicts()
+        )
         return list(objs)
 
+
+    @classmethod
+    @DB.connection_context()
+    def get_configured_llms(cls):
+        fields = [
+            cls.model.llm_factory,
+            LLMFactories.logo,
+            LLMFactories.tags,
+            cls.model.model_type,
+            cls.model.llm_name,
+            cls.model.used_tokens,
+            cls.model.api_key,
+            cls.model.api_base
+        ]
+      
+        llm_names = ["Gemini","OpenAI","Ollama","Azure-OpenAI"]
+        #cls.query( llm_factory=llm_names)
+        llm_keys = (
+            cls.model
+            .select(*fields)
+            .join(LLMFactories, on=(cls.model.llm_factory == LLMFactories.name))
+            .where(cls.model.llm_factory.in_(llm_names), cls.model.api_key.is_null(False))
+            .group_by(cls.model.llm_factory)
+            .dicts()
+        )
+        return list(llm_keys)
+    
     @classmethod
     @DB.connection_context()
     def get_application_llms(cls, tenant_id):
@@ -78,9 +119,8 @@ class TenantLLMService(CommonService):
         ]
         objs = cls.model.select(*fields).join(LLMFactories, on=(cls.model.llm_factory == LLMFactories.name)).where(
             cls.model.tenant_id == tenant_id, ~cls.model.api_key.is_null()).dicts()
-        llm_names = ["Gemini","OpenAI","Ollama","Azure-OpenAI"]
-        llm_keys = cls.model.query(llm_factory=llm_names)
-        print(llm_keys)
+        
+        #print(llm_keys)
         return list(objs)
 
 

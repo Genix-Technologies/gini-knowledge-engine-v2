@@ -27,7 +27,8 @@ Cargo.lock
 
 .idea/
 .vscode/
-
+web/
+/web
 # Exclude Mac generated files
 .DS_Store
 

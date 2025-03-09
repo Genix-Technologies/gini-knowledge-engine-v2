@@ -114,7 +114,7 @@ class CommonService:
     def get_by_id(cls, pid):
         try:
             obj = cls.model.query(id=pid)
-            print("Get By Id call ", obj)
+            #print("Get By Id call ", obj)
             return True, obj[0]
         except Exception:
             return False, None

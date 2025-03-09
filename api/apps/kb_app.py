@@ -73,27 +73,12 @@ def create():
 
 @manager.route('/update', methods=['post'])  # noqa: F821
 @login_required
-@validate_request("kb_id", "name", "description", "permission", "parser_id")
+@validate_request("kb_id", "name", "description",  "parser_id") #"permission",
 @not_allowed_parameters("id", "tenant_id", "created_by", "create_time", "update_time", "create_date", "update_date", "created_by")
 def update():
     req = request.json
-    print("In update call")
     req["name"] = req["name"].strip()
-    print("In update 82")
-    #if not KnowledgebaseService.accessible4deletion(req["kb_id"], current_user.id):
-    #    return get_json_result(
-     #       data=False,
-    #        message='No authorization.',
-    #        code=settings.RetCode.AUTHENTICATION_ERROR
-    #    )
     try:
-        #if not KnowledgebaseService.query(
-        #        created_by=current_user.id, id=req["kb_id"]):
-        #    return get_json_result(
-        #        data=False, message='Only owner of knowledgebase authorized for this operation.',
-        #        code=settings.RetCode.OPERATING_ERROR)
-
-        print("Updating details 96")
         e, kb = KnowledgebaseService.get_by_id(req["kb_id"])
         if not e:
             return get_data_error_result(
@@ -105,13 +90,13 @@ def update():
                 message='The chunk method Tag has not been supported by Infinity yet.',
                 code=settings.RetCode.OPERATING_ERROR
             )
-
+        print("Line 93 \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n")
         if req["name"].lower() != kb.name.lower() \
                 and len(
             KnowledgebaseService.query(name=req["name"], status=StatusEnum.VALID.value)) > 1:
             return get_data_error_result(
                 message="Duplicated knowledgebase name.")
-        print("Updating details 111")
+        print("Updating details 111 \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n")
         del req["kb_id"]
         if not KnowledgebaseService.update_by_id(kb.id, req):
             return get_data_error_result()
@@ -182,8 +167,8 @@ def list_kbs():
             items_per_page, orderby, desc, keywords, parser_id
         )
         #tenant["tenant_id"]
-        print("All tenants", kbs)
-        print("All tenants", total)
+        #print("All tenants", kbs)
+        #print("All tenants", total)
         all_kbs.extend(kbs)  # Merge all kbs
         total_count += total  # Sum up the total count
 
