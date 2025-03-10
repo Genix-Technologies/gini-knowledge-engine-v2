@@ -2,7 +2,7 @@ include:
   - ./docker-compose-base.yml
 services:
   ragflow:
-    image: ${RAGFLOW_IMAGE}
+    image: swr.cn-north-4.myhuaweicloud.com/infiniflow/ragflow:nightly-slim
     container_name: ragflow-server
     ports:
       - ${SVR_HTTP_PORT}:9380
